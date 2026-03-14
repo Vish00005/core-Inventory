@@ -16,6 +16,7 @@ export const errorHandler = (err, req, res, next) => {
 
   // Duplicate key error
   if (err.code === 11000) {
+    console.error('Duplicate key error:', err);
     message = 'Duplicate field value entered';
     statusCode = 400;
   }

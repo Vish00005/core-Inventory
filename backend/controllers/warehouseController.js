@@ -35,7 +35,7 @@ export const getWarehouseById = async (req, res, next) => {
 // @access  Private (Manager/Admin)
 export const createWarehouse = async (req, res, next) => {
   try {
-    const { name, location, description, rooms } = req.body;
+    const { name, code, location, description, rooms } = req.body;
 
     const warehouseExists = await Warehouse.findOne({ name });
     if (warehouseExists) {
@@ -45,6 +45,7 @@ export const createWarehouse = async (req, res, next) => {
 
     const warehouse = new Warehouse({
       name,
+      code,
       location,
       description,
       rooms:
@@ -65,7 +66,7 @@ export const createWarehouse = async (req, res, next) => {
 // @access  Private (Manager/Admin)
 export const updateWarehouse = async (req, res, next) => {
   try {
-    const { name, location, description, rooms } = req.body;
+    const { name, code, location, description, rooms } = req.body;
 
     const warehouse = await Warehouse.findById(req.params.id);
 
@@ -80,6 +81,7 @@ export const updateWarehouse = async (req, res, next) => {
       }
 
       warehouse.name = name || warehouse.name;
+      warehouse.code = code || warehouse.code;
       warehouse.location = location || warehouse.location;
       warehouse.description =
         description !== undefined ? description : warehouse.description;

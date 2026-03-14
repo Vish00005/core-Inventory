@@ -39,6 +39,7 @@ const importData = async () => {
       {
         name: "Vishal Khimsuriya",
         email: "admin@example.com",
+        loginId: "admin01",
         password: hashedPassword,
         role: "admin",
         isVerified: true,
@@ -46,6 +47,7 @@ const importData = async () => {
       {
         name: "Amit Patel",
         email: "manager@example.com",
+        loginId: "manager01",
         password: hashedPassword,
         role: "manager",
         isVerified: true,
@@ -53,6 +55,7 @@ const importData = async () => {
       {
         name: "Sneha Mehta",
         email: "staff@example.com",
+        loginId: "staff01",
         password: hashedPassword,
         role: "staff",
         isVerified: true,
@@ -76,13 +79,6 @@ const importData = async () => {
         location: "Surat, Gujarat",
         description: "Diamond and Textile logistics hub",
         rooms: ["Main Hall", "High Security Vault", "Export Dock"],
-      },
-      {
-        name: "Rajkot Engineering Zone",
-        code: "RZ",
-        location: "Rajkot, Gujarat",
-        description: "Industrial components and machinery hub",
-        rooms: ["Heavy Machining Area", "Parts Store", "Loading Bay"],
       },
     ]);
 

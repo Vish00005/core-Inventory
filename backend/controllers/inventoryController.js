@@ -13,32 +13,17 @@ const updateInventoryBlock = async (
   quantity,
   session,
 ) => {
-  let inventory = await Inventory.findOne({
-    product: productId,
-    warehouse: warehouseId,
-    room,
-  }).session(session);
-
-  if (!inventory) {
-    if (quantity < 0)
-      throw new Error(
-        `Cannot reduce stock below 0 for uninitialized inventory in ${room}`,
-      );
-    inventory = new Inventory({
-      product: productId,
-      warehouse: warehouseId,
-      room,
-      quantity: 0,
-    });
-  }
-
-  inventory.quantity += quantity;
+  // Use findOneAndUpdate with upsert for atomic operation
+  const inventory = await Inventory.findOneAndUpdate(
+    { product: productId, warehouse: warehouseId, room },
+    { $inc: { quantity: quantity } },
+    { session, new: true, upsert: true, runValidators: true },
+  );
 
   if (inventory.quantity < 0) {
-    throw new Error("Insufficient stock in warehouse");
+    throw new Error(`Insufficient stock in room: ${room}`);
   }
 
-  await inventory.save({ session });
   return inventory;
 };
 

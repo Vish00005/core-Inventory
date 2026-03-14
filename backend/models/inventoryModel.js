@@ -12,6 +12,10 @@ const inventorySchema = new mongoose.Schema(
       ref: 'Warehouse',
       required: true,
     },
+    room: {
+      type: String,
+      required: true,
+    },
     quantity: {
       type: Number,
       required: true,
@@ -24,7 +28,7 @@ const inventorySchema = new mongoose.Schema(
   }
 );
 
-inventorySchema.index({ product: 1, warehouse: 1 }, { unique: true });
+inventorySchema.index({ product: 1, warehouse: 1, room: 1 }, { unique: true });
 
 const Inventory = mongoose.model('Inventory', inventorySchema);
 export default Inventory;
