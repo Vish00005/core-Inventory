@@ -8,7 +8,7 @@ import sendEmail from "../utils/sendEmail.js";
 // @access  Public
 export const registerUser = async (req, res, next) => {
   try {
-    const { name, email, password, role } = req.body;
+    const { name, email, loginId, password, role } = req.body;
 
     const emailExists = await User.findOne({ email });
     if (emailExists) {
@@ -19,6 +19,7 @@ export const registerUser = async (req, res, next) => {
     const user = await User.create({
       name,
       email,
+      loginId,
       password,
       role: role || "staff",
     });

@@ -38,7 +38,7 @@ export const useAuthStore = create(
         try {
           const res = await axios.post(`${API_URL}/auth/register`, userData);
           set({
-            user: { _id: res.data._id, name: res.data.name, email: res.data.email, role: res.data.role },
+            user: { _id: res.data._id, name: res.data.name, email: res.data.email, loginId: res.data.loginId, role: res.data.role },
             token: res.data.token,
             isAuthenticated: true,
             isLoading: false,

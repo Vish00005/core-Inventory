@@ -4,6 +4,9 @@ export const registerSchema = z.object({
   body: z.object({
     name: z.string().min(2, 'Name must be at least 2 characters'),
     email: z.string().email('Invalid email address'),
+    loginId: z.string()
+      .min(6, 'Login ID must be at least 6 characters')
+      .max(12, 'Login ID must be at most 12 characters'),
     password: z.string()
       .min(8, 'Password must be at least 8 characters')
       .regex(/[a-z]/, 'Password must contain at least one lowercase letter')

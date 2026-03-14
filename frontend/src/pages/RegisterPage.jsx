@@ -8,6 +8,7 @@ const RegisterPage = () => {
   const [reEnterPassword, setReEnterPassword] = useState('');
   const [localError, setLocalError] = useState('');
   const [name, setName] = useState('');
+  const [loginId, setLoginId] = useState('');
 
   const { register, isLoading, error, isAuthenticated, clearError } = useAuthStore();
   const navigate = useNavigate();
@@ -42,8 +43,13 @@ const RegisterPage = () => {
       return;
     }
 
+    if (loginId.length < 6 || loginId.length > 12) {
+      setLocalError("Login ID must be between 6 and 12 characters.");
+      return;
+    }
+
     // Attempt Registration
-    const success = await register({ name, email, password });
+    const success = await register({ name, email, loginId, password });
     if (success) {
       navigate('/');
     }
@@ -74,6 +80,26 @@ const RegisterPage = () => {
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label htmlFor="loginId" className="block text-sm font-medium text-gray-700">
+                Login ID
+              </label>
+              <div className="mt-1">
+                <input
+                  id="loginId"
+                  name="loginId"
+                  type="text"
+                  required
+                  minLength={6}
+                  maxLength={12}
+                  value={loginId}
+                  onChange={(e) => setLoginId(e.target.value)}
+                  className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                  placeholder="6-12 characters"
                 />
               </div>
             </div>
