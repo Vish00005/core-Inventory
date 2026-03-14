@@ -147,6 +147,7 @@ export const processReceipt = async (req, res, next) => {
         createdBy: req.user._id,
         notes,
         formattedId,
+        completedAt: finalStatus === "COMPLETED" ? new Date() : undefined,
       });
     }
 
@@ -217,6 +218,7 @@ export const processDelivery = async (req, res, next) => {
         createdBy: req.user._id,
         notes,
         formattedId,
+        completedAt: finalStatus === "COMPLETED" ? new Date() : undefined,
       });
     }
 
@@ -313,6 +315,7 @@ export const processTransfer = async (req, res, next) => {
         createdBy: req.user._id,
         notes,
         formattedId,
+        completedAt: new Date(),
       });
     }
 
@@ -390,6 +393,7 @@ export const processAdjustment = async (req, res, next) => {
         createdBy: req.user._id,
         notes: notes || `Adjusted from ${currentQuantity} to ${newQuantity}`,
         formattedId,
+        completedAt: new Date(),
       });
     }
 
@@ -489,6 +493,7 @@ export const completeTransaction = async (req, res, next) => {
     }
 
     transaction.status = "COMPLETED";
+    transaction.completedAt = new Date();
     await transaction.save({ session });
 
     await session.commitTransaction();
@@ -562,6 +567,9 @@ export const updateTransactionStatus = async (req, res, next) => {
     }
 
     transaction.status = status;
+    if (status === "COMPLETED") {
+      transaction.completedAt = new Date();
+    }
     await transaction.save({ session });
 
     await session.commitTransaction();

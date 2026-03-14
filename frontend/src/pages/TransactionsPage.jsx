@@ -82,6 +82,21 @@ const TransactionsPage = () => {
     }
   };
 
+  const getTypeColor = (type) => {
+    switch (type) {
+      case "RECEIPT":
+        return "text-green-600 bg-green-500/10 border-green-500/20";
+      case "DELIVERY":
+        return "text-red-600 bg-red-500/10 border-red-500/20";
+      case "TRANSFER":
+        return "text-blue-600 bg-blue-500/10 border-blue-500/20";
+      case "ADJUSTMENT":
+        return "text-purple-600 bg-purple-500/10 border-purple-500/20";
+      default:
+        return "text-primary bg-primary/5 border-primary/10";
+    }
+  };
+
   const handleComplete = async (id) => {
     try {
       await axios.post(
@@ -217,7 +232,9 @@ const TransactionsPage = () => {
                         {new Date(tx.createdAt).toLocaleString()}
                       </td>
                       <td className="px-6 py-4">
-                        <span className="font-mono text-xs font-bold text-primary bg-primary/5 px-2 py-1 rounded">
+                        <span
+                          className={`font-mono text-xs font-bold px-2 py-1 rounded border ${getTypeColor(tx.type)}`}
+                        >
                           {tx.formattedId ||
                             tx._id.toString().substring(0, 8).toUpperCase()}
                         </span>
@@ -305,7 +322,9 @@ const TransactionsPage = () => {
                                 <p className="text-[10px] uppercase font-bold text-muted-foreground mb-1">
                                   Transaction ID
                                 </p>
-                                <p className="font-mono text-xs font-bold text-primary">
+                                <p
+                                  className={`font-mono text-xs font-bold ${getTypeColor(tx.type).split(" ")[0]}`}
+                                >
                                   {tx.formattedId || tx._id}
                                 </p>
                               </div>
@@ -373,23 +392,49 @@ const TransactionsPage = () => {
                               </div>
                             </div>
 
-                            {/* Col 3: Actions & Status */}
-                            <div className="flex flex-col justify-between items-end">
-                              <div className="text-right">
-                                <p className="text-[10px] uppercase font-bold text-muted-foreground mb-1">
-                                  Current Status
-                                </p>
-                                <span
-                                  className={`px-3 py-1 rounded-full text-xs font-black tracking-widest uppercase border ${
-                                    tx.status === "COMPLETED"
-                                      ? "bg-green-500/10 text-green-600 border-green-500/20"
-                                      : tx.status === "PENDING"
-                                        ? "bg-orange-500/10 text-orange-600 border-orange-500/20"
-                                        : "bg-muted text-muted-foreground"
-                                  }`}
-                                >
-                                  {tx.status}
-                                </span>
+                            {/* Col 3: Actions & Workflow Timing */}
+                            <div className="flex flex-col justify-between items-end space-y-4">
+                              <div className="text-right space-y-4">
+                                <div>
+                                  <p className="text-[10px] uppercase font-bold text-muted-foreground mb-1">
+                                    Ordered Date
+                                  </p>
+                                  <p className="text-sm font-medium">
+                                    {new Date(tx.createdAt).toLocaleString()}
+                                  </p>
+                                </div>
+                                {tx.completedAt && (
+                                  <div>
+                                    <p className="text-[10px] uppercase font-bold text-muted-foreground mb-1">
+                                      {tx.type === "RECEIPT"
+                                        ? "Received Date"
+                                        : tx.type === "DELIVERY"
+                                          ? "Dispatched Date"
+                                          : "Completion Date"}
+                                    </p>
+                                    <p className="text-sm font-medium text-green-600">
+                                      {new Date(
+                                        tx.completedAt,
+                                      ).toLocaleString()}
+                                    </p>
+                                  </div>
+                                )}
+                                <div>
+                                  <p className="text-[10px] uppercase font-bold text-muted-foreground mb-1">
+                                    Current Status
+                                  </p>
+                                  <span
+                                    className={`px-3 py-1 rounded-full text-xs font-black tracking-widest uppercase border ${
+                                      tx.status === "COMPLETED"
+                                        ? "bg-green-500/10 text-green-600 border-green-500/20"
+                                        : tx.status === "PENDING"
+                                          ? "bg-orange-500/10 text-orange-600 border-orange-500/20"
+                                          : "bg-muted text-muted-foreground"
+                                    }`}
+                                  >
+                                    {tx.status}
+                                  </span>
+                                </div>
                               </div>
 
                               {tx.status === "PENDING" ? (

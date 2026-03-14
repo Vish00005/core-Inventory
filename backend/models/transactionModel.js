@@ -49,6 +49,9 @@ const transactionSchema = new mongoose.Schema(
       type: String,
       unique: true,
     },
+    completedAt: {
+      type: Date,
+    },
   },
   {
     timestamps: true,

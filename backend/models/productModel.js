@@ -1,4 +1,4 @@
-import mongoose from 'mongoose';
+import mongoose from "mongoose";
 
 const productSchema = new mongoose.Schema(
   {
@@ -20,14 +20,14 @@ const productSchema = new mongoose.Schema(
     unit: {
       type: String, // e.g., 'pcs', 'kg', 'boxes'
       required: true,
-      default: 'pcs',
+      default: "pcs",
     },
     description: {
       type: String,
     },
     image: {
       type: String, // Cloudinary URL
-      default: '',
+      default: "",
     },
     reorderLevel: {
       type: Number,
@@ -37,9 +37,9 @@ const productSchema = new mongoose.Schema(
   },
   {
     timestamps: true,
-  }
+  },
 );
 
-productSchema.index({ name: 'text', sku: 'text', category: 'text' });
-const Product = mongoose.model('Product', productSchema);
+productSchema.index({ name: "text", sku: "text", category: "text" });
+const Product = mongoose.model("Product", productSchema);
 export default Product;
