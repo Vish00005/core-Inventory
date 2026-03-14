@@ -1,24 +1,24 @@
-import express from 'express';
+import express from "express";
 import {
   getProducts,
   getProductById,
   createProduct,
   updateProduct,
   deleteProduct,
-} from '../controllers/productController.js';
-import { protect, authorize } from '../middleware/authMiddleware.js';
+} from "../controllers/productController.js";
+import { protect, authorize } from "../middleware/authMiddleware.js";
 
 const router = express.Router();
 
 router
-  .route('/')
+  .route("/")
   .get(protect, getProducts)
-  .post(protect, authorize('manager', 'admin'), createProduct);
+  .post(protect, authorize("manager", "admin"), createProduct);
 
 router
-  .route('/:id')
+  .route("/:id")
   .get(protect, getProductById)
-  .put(protect, authorize('manager', 'admin'), updateProduct)
-  .delete(protect, authorize('admin'), deleteProduct);
+  .put(protect, authorize("manager", "admin"), updateProduct)
+  .delete(protect, authorize("admin"), deleteProduct);
 
 export default router;

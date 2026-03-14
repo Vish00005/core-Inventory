@@ -1,4 +1,4 @@
-import Product from '../models/productModel.js';
+import Product from "../models/productModel.js";
 
 // @desc    Get all products
 // @route   GET /api/products
@@ -23,7 +23,7 @@ export const getProductById = async (req, res, next) => {
       res.json(product);
     } else {
       res.status(404);
-      return next(new Error('Product not found'));
+      return next(new Error("Product not found"));
     }
   } catch (error) {
     next(error);
@@ -35,12 +35,13 @@ export const getProductById = async (req, res, next) => {
 // @access  Private (Manager/Admin)
 export const createProduct = async (req, res, next) => {
   try {
-    const { name, sku, category, unit, description, image, reorderLevel } = req.body;
+    const { name, sku, category, unit, description, image, reorderLevel } =
+      req.body;
 
     const productExists = await Product.findOne({ sku });
     if (productExists) {
       res.status(400);
-      return next(new Error('Product with this SKU already exists'));
+      return next(new Error("Product with this SKU already exists"));
     }
 
     const product = new Product({
@@ -65,7 +66,8 @@ export const createProduct = async (req, res, next) => {
 // @access  Private (Manager/Admin)
 export const updateProduct = async (req, res, next) => {
   try {
-    const { name, sku, category, unit, description, image, reorderLevel } = req.body;
+    const { name, sku, category, unit, description, image, reorderLevel } =
+      req.body;
 
     const product = await Product.findById(req.params.id);
 
@@ -75,7 +77,9 @@ export const updateProduct = async (req, res, next) => {
         const skuExists = await Product.findOne({ sku });
         if (skuExists) {
           res.status(400);
-          return next(new Error('Another product with this SKU already exists'));
+          return next(
+            new Error("Another product with this SKU already exists"),
+          );
         }
       }
 
@@ -85,13 +89,14 @@ export const updateProduct = async (req, res, next) => {
       product.unit = unit || product.unit;
       product.description = description || product.description;
       product.image = image !== undefined ? image : product.image;
-      product.reorderLevel = reorderLevel !== undefined ? reorderLevel : product.reorderLevel;
+      product.reorderLevel =
+        reorderLevel !== undefined ? reorderLevel : product.reorderLevel;
 
       const updatedProduct = await product.save();
       res.json(updatedProduct);
     } else {
       res.status(404);
-      return next(new Error('Product not found'));
+      return next(new Error("Product not found"));
     }
   } catch (error) {
     next(error);
@@ -107,10 +112,10 @@ export const deleteProduct = async (req, res, next) => {
 
     if (product) {
       await Product.deleteOne({ _id: product._id });
-      res.json({ message: 'Product removed' });
+      res.json({ message: "Product removed" });
     } else {
       res.status(404);
-      return next(new Error('Product not found'));
+      return next(new Error("Product not found"));
     }
   } catch (error) {
     next(error);

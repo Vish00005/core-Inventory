@@ -1,21 +1,39 @@
-import Inventory from '../models/inventoryModel.js';
-import Transaction from '../models/transactionModel.js';
-import Product from '../models/productModel.js';
-import mongoose from 'mongoose';
+import Inventory from "../models/inventoryModel.js";
+import Transaction from "../models/transactionModel.js";
+import Product from "../models/productModel.js";
+import mongoose from "mongoose";
 
 // Helper to update inventory balance
-const updateInventoryBlock = async (productId, warehouseId, room, quantity, session) => {
-  let inventory = await Inventory.findOne({ product: productId, warehouse: warehouseId, room }).session(session);
+const updateInventoryBlock = async (
+  productId,
+  warehouseId,
+  room,
+  quantity,
+  session,
+) => {
+  let inventory = await Inventory.findOne({
+    product: productId,
+    warehouse: warehouseId,
+    room,
+  }).session(session);
 
   if (!inventory) {
-    if (quantity < 0) throw new Error(`Cannot reduce stock below 0 for uninitialized inventory in ${room}`);
-    inventory = new Inventory({ product: productId, warehouse: warehouseId, room, quantity: 0 });
+    if (quantity < 0)
+      throw new Error(
+        `Cannot reduce stock below 0 for uninitialized inventory in ${room}`,
+      );
+    inventory = new Inventory({
+      product: productId,
+      warehouse: warehouseId,
+      room,
+      quantity: 0,
+    });
   }
 
   inventory.quantity += quantity;
 
   if (inventory.quantity < 0) {
-    throw new Error('Insufficient stock in warehouse');
+    throw new Error("Insufficient stock in warehouse");
   }
 
   await inventory.save({ session });
@@ -28,7 +46,7 @@ const updateInventoryBlock = async (productId, warehouseId, room, quantity, sess
 export const getInventory = async (req, res, next) => {
   try {
     const { warehouse, room, category, isLowStock } = req.query;
-    
+
     let filter = {};
     if (warehouse) filter.warehouse = warehouse;
     if (room) filter.room = room;
@@ -39,14 +57,16 @@ export const getInventory = async (req, res, next) => {
     // Given Mongoose, we'll populate product.
 
     let inventory = await Inventory.find(filter)
-      .populate('product')
-      .populate('warehouse', 'name location rooms');
+      .populate("product")
+      .populate("warehouse", "name location rooms");
 
     if (category) {
-      inventory = inventory.filter(inv => inv.product.category === category);
+      inventory = inventory.filter((inv) => inv.product.category === category);
     }
-    if (isLowStock === 'true') {
-      inventory = inventory.filter(inv => inv.quantity <= inv.product.reorderLevel);
+    if (isLowStock === "true") {
+      inventory = inventory.filter(
+        (inv) => inv.quantity <= inv.product.reorderLevel,
+      );
     }
 
     res.json(inventory);
@@ -64,27 +84,27 @@ export const processReceipt = async (req, res, next) => {
   session.startTransaction();
   try {
     const { items, notes, status } = req.body;
-    const finalStatus = status || 'COMPLETED';
-    
+    const finalStatus = status || "COMPLETED";
+
     if (!items || items.length === 0) {
-      throw new Error('No items provided for receipt');
+      throw new Error("No items provided for receipt");
     }
 
     const transactions = [];
 
     for (const item of items) {
       const { product, warehouse, room, quantity } = item;
-      
-      if (quantity <= 0) throw new Error('Quantity must be greater than 0');
-      if (!room) throw new Error('Room is required for receiving inventory');
 
-      if (finalStatus === 'COMPLETED') {
+      if (quantity <= 0) throw new Error("Quantity must be greater than 0");
+      if (!room) throw new Error("Room is required for receiving inventory");
+
+      if (finalStatus === "COMPLETED") {
         await updateInventoryBlock(product, warehouse, room, quantity, session);
       }
 
       transactions.push({
         product,
-        type: 'RECEIPT',
+        type: "RECEIPT",
         quantity,
         destinationWarehouse: warehouse,
         destinationRoom: room,
@@ -94,10 +114,17 @@ export const processReceipt = async (req, res, next) => {
       });
     }
 
-    const createdTransactions = await Transaction.insertMany(transactions, { session });
+    const createdTransactions = await Transaction.insertMany(transactions, {
+      session,
+    });
 
     await session.commitTransaction();
-    res.status(201).json({ message: 'Receipt processed successfully', transactions: createdTransactions });
+    res
+      .status(201)
+      .json({
+        message: "Receipt processed successfully",
+        transactions: createdTransactions,
+      });
   } catch (error) {
     await session.abortTransaction();
     res.status(400);
@@ -115,28 +142,34 @@ export const processDelivery = async (req, res, next) => {
   session.startTransaction();
   try {
     const { items, notes, status } = req.body;
-    const finalStatus = status || 'COMPLETED';
+    const finalStatus = status || "COMPLETED";
 
     if (!items || items.length === 0) {
-      throw new Error('No items provided for delivery');
+      throw new Error("No items provided for delivery");
     }
 
     const transactions = [];
 
     for (const item of items) {
       const { product, warehouse, room, quantity } = item;
-      
-      if (quantity <= 0) throw new Error('Quantity must be greater than 0');
-      if (!room) throw new Error('Room is required for fulfilling a delivery');
+
+      if (quantity <= 0) throw new Error("Quantity must be greater than 0");
+      if (!room) throw new Error("Room is required for fulfilling a delivery");
 
       // reduce inventory only if completed
-      if (finalStatus === 'COMPLETED') {
-        await updateInventoryBlock(product, warehouse, room, -quantity, session);
+      if (finalStatus === "COMPLETED") {
+        await updateInventoryBlock(
+          product,
+          warehouse,
+          room,
+          -quantity,
+          session,
+        );
       }
 
       transactions.push({
         product,
-        type: 'DELIVERY',
+        type: "DELIVERY",
         quantity,
         sourceWarehouse: warehouse,
         sourceRoom: room,
@@ -146,10 +179,17 @@ export const processDelivery = async (req, res, next) => {
       });
     }
 
-    const createdTransactions = await Transaction.insertMany(transactions, { session });
+    const createdTransactions = await Transaction.insertMany(transactions, {
+      session,
+    });
 
     await session.commitTransaction();
-    res.status(201).json({ message: 'Delivery processed successfully', transactions: createdTransactions });
+    res
+      .status(201)
+      .json({
+        message: "Delivery processed successfully",
+        transactions: createdTransactions,
+      });
   } catch (error) {
     await session.abortTransaction();
     res.status(400);
@@ -166,33 +206,60 @@ export const processTransfer = async (req, res, next) => {
   const session = await mongoose.startSession();
   session.startTransaction();
   try {
-    const { items, sourceWarehouse, destinationWarehouse, sourceRoom, destinationRoom, notes } = req.body;
+    const {
+      items,
+      sourceWarehouse,
+      destinationWarehouse,
+      sourceRoom,
+      destinationRoom,
+      notes,
+    } = req.body;
 
-    if (!items || items.length === 0) throw new Error('No items provided for transfer');
-    
-    if (sourceWarehouse === destinationWarehouse && sourceRoom === destinationRoom) {
-      throw new Error('Source and destination cannot be the exact same warehouse and room');
+    if (!items || items.length === 0)
+      throw new Error("No items provided for transfer");
+
+    if (
+      sourceWarehouse === destinationWarehouse &&
+      sourceRoom === destinationRoom
+    ) {
+      throw new Error(
+        "Source and destination cannot be the exact same warehouse and room",
+      );
     }
 
     if (!sourceRoom || !destinationRoom) {
-      throw new Error('Both source room and destination room must be specified');
+      throw new Error(
+        "Both source room and destination room must be specified",
+      );
     }
 
     const transactions = [];
 
     for (const item of items) {
       const { product, quantity } = item;
-      
-      if (quantity <= 0) throw new Error('Quantity must be greater than 0');
+
+      if (quantity <= 0) throw new Error("Quantity must be greater than 0");
 
       // reduce from source
-      await updateInventoryBlock(product, sourceWarehouse, sourceRoom, -quantity, session);
+      await updateInventoryBlock(
+        product,
+        sourceWarehouse,
+        sourceRoom,
+        -quantity,
+        session,
+      );
       // increase in destination
-      await updateInventoryBlock(product, destinationWarehouse, destinationRoom, quantity, session);
+      await updateInventoryBlock(
+        product,
+        destinationWarehouse,
+        destinationRoom,
+        quantity,
+        session,
+      );
 
       transactions.push({
         product,
-        type: 'TRANSFER',
+        type: "TRANSFER",
         quantity,
         sourceWarehouse,
         sourceRoom,
@@ -203,10 +270,17 @@ export const processTransfer = async (req, res, next) => {
       });
     }
 
-    const createdTransactions = await Transaction.insertMany(transactions, { session });
+    const createdTransactions = await Transaction.insertMany(transactions, {
+      session,
+    });
 
     await session.commitTransaction();
-    res.status(201).json({ message: 'Transfer processed successfully', transactions: createdTransactions });
+    res
+      .status(201)
+      .json({
+        message: "Transfer processed successfully",
+        transactions: createdTransactions,
+      });
   } catch (error) {
     await session.abortTransaction();
     res.status(400);
@@ -226,19 +300,24 @@ export const processAdjustment = async (req, res, next) => {
     const { items, notes } = req.body;
     // items: [{ product, warehouse, room, newQuantity }]
 
-    if (!items || items.length === 0) throw new Error('No items provided for adjustment');
+    if (!items || items.length === 0)
+      throw new Error("No items provided for adjustment");
 
     const transactions = [];
 
     for (const item of items) {
       const { product, warehouse, room, newQuantity } = item;
-      
-      if (newQuantity < 0) throw new Error('Quantity cannot be negative');
-      if (!room) throw new Error('Room is required for inventory adjustments');
 
-      let inventory = await Inventory.findOne({ product, warehouse, room }).session(session);
+      if (newQuantity < 0) throw new Error("Quantity cannot be negative");
+      if (!room) throw new Error("Room is required for inventory adjustments");
+
+      let inventory = await Inventory.findOne({
+        product,
+        warehouse,
+        room,
+      }).session(session);
       let currentQuantity = inventory ? inventory.quantity : 0;
-      
+
       const diff = newQuantity - currentQuantity;
 
       if (diff === 0) continue; // no adjustment needed
@@ -246,13 +325,13 @@ export const processAdjustment = async (req, res, next) => {
       if (!inventory) {
         inventory = new Inventory({ product, warehouse, room, quantity: 0 });
       }
-      
+
       inventory.quantity = newQuantity;
       await inventory.save({ session });
 
       transactions.push({
         product,
-        type: 'ADJUSTMENT',
+        type: "ADJUSTMENT",
         quantity: Math.abs(diff), // Storing absolute difference
         sourceWarehouse: diff < 0 ? warehouse : undefined,
         sourceRoom: diff < 0 ? room : undefined,
@@ -265,11 +344,18 @@ export const processAdjustment = async (req, res, next) => {
 
     let createdTransactions = [];
     if (transactions.length > 0) {
-      createdTransactions = await Transaction.insertMany(transactions, { session });
+      createdTransactions = await Transaction.insertMany(transactions, {
+        session,
+      });
     }
 
     await session.commitTransaction();
-    res.status(201).json({ message: 'Adjustment processed successfully', transactions: createdTransactions });
+    res
+      .status(201)
+      .json({
+        message: "Adjustment processed successfully",
+        transactions: createdTransactions,
+      });
   } catch (error) {
     await session.abortTransaction();
     res.status(400);
@@ -289,14 +375,17 @@ export const getTransactions = async (req, res, next) => {
     let filter = {};
     if (type) filter.type = type;
     if (warehouse) {
-      filter.$or = [{ sourceWarehouse: warehouse }, { destinationWarehouse: warehouse }];
+      filter.$or = [
+        { sourceWarehouse: warehouse },
+        { destinationWarehouse: warehouse },
+      ];
     }
 
     const transactions = await Transaction.find(filter)
-      .populate('product', 'name sku')
-      .populate('sourceWarehouse', 'name')
-      .populate('destinationWarehouse', 'name')
-      .populate('createdBy', 'name')
+      .populate("product", "name sku")
+      .populate("sourceWarehouse", "name")
+      .populate("destinationWarehouse", "name")
+      .populate("createdBy", "name")
       .sort({ createdAt: -1 });
 
     res.json(transactions);
@@ -312,32 +401,48 @@ export const completeTransaction = async (req, res, next) => {
   const session = await mongoose.startSession();
   session.startTransaction();
   try {
-    const transaction = await Transaction.findById(req.params.id).session(session);
+    const transaction = await Transaction.findById(req.params.id).session(
+      session,
+    );
 
     if (!transaction) {
       res.status(404);
-      throw new Error('Transaction not found');
+      throw new Error("Transaction not found");
     }
 
-    if (transaction.status !== 'PENDING') {
+    if (transaction.status !== "PENDING") {
       res.status(400);
-      throw new Error('Can only complete PENDING transactions');
+      throw new Error("Can only complete PENDING transactions");
     }
 
     // Update inventory
-    if (transaction.type === 'RECEIPT') {
-      await updateInventoryBlock(transaction.product, transaction.destinationWarehouse, transaction.destinationRoom, transaction.quantity, session);
-    } else if (transaction.type === 'DELIVERY') {
-      await updateInventoryBlock(transaction.product, transaction.sourceWarehouse, transaction.sourceRoom, -transaction.quantity, session);
+    if (transaction.type === "RECEIPT") {
+      await updateInventoryBlock(
+        transaction.product,
+        transaction.destinationWarehouse,
+        transaction.destinationRoom,
+        transaction.quantity,
+        session,
+      );
+    } else if (transaction.type === "DELIVERY") {
+      await updateInventoryBlock(
+        transaction.product,
+        transaction.sourceWarehouse,
+        transaction.sourceRoom,
+        -transaction.quantity,
+        session,
+      );
     } else {
-      throw new Error('Status transition only supported for RECEIPTS and DELIVERIES');
+      throw new Error(
+        "Status transition only supported for RECEIPTS and DELIVERIES",
+      );
     }
 
-    transaction.status = 'COMPLETED';
+    transaction.status = "COMPLETED";
     await transaction.save({ session });
 
     await session.commitTransaction();
-    res.json({ message: 'Transaction marked as completed', transaction });
+    res.json({ message: "Transaction marked as completed", transaction });
   } catch (error) {
     await session.abortTransaction();
     next(error);

@@ -1,7 +1,7 @@
-import User from '../models/userModel.js';
-import OTP from '../models/otpModel.js';
-import generateToken from '../utils/generateToken.js';
-import sendEmail from '../utils/sendEmail.js';
+import User from "../models/userModel.js";
+import OTP from "../models/otpModel.js";
+import generateToken from "../utils/generateToken.js";
+import sendEmail from "../utils/sendEmail.js";
 
 // @desc    Register a new user
 // @route   POST /api/auth/register
@@ -13,14 +13,14 @@ export const registerUser = async (req, res, next) => {
     const emailExists = await User.findOne({ email });
     if (emailExists) {
       res.status(400);
-      return next(new Error('Email already exists'));
+      return next(new Error("Email already exists"));
     }
 
     const user = await User.create({
       name,
       email,
       password,
-      role: role || 'staff',
+      role: role || "staff",
     });
 
     if (user) {
@@ -34,7 +34,7 @@ export const registerUser = async (req, res, next) => {
       });
     } else {
       res.status(400);
-      return next(new Error('Invalid user data'));
+      return next(new Error("Invalid user data"));
     }
   } catch (error) {
     next(error);
@@ -63,7 +63,7 @@ export const loginUser = async (req, res, next) => {
       });
     } else {
       res.status(401);
-      return next(new Error('Invalid Email or Password'));
+      return next(new Error("Invalid Email or Password"));
     }
   } catch (error) {
     next(error);
@@ -80,7 +80,12 @@ export const requestResetOTP = async (req, res, next) => {
     const user = await User.findOne({ email });
     if (!user) {
       // Don't leak if user exists or not
-      return res.status(200).json({ message: 'If an account with that email exists, an OTP has been sent.' });
+      return res
+        .status(200)
+        .json({
+          message:
+            "If an account with that email exists, an OTP has been sent.",
+        });
     }
 
     // Generate 6 digit OTP
@@ -100,11 +105,15 @@ export const requestResetOTP = async (req, res, next) => {
     const message = `Your password reset OTP is ${otp}. It will expire in 10 minutes.`;
     await sendEmail({
       email: user.email,
-      subject: 'CoreInventory Password Reset OTP',
+      subject: "CoreInventory Password Reset OTP",
       message,
     });
 
-    res.status(200).json({ message: 'If an account with that email exists, an OTP has been sent.' });
+    res
+      .status(200)
+      .json({
+        message: "If an account with that email exists, an OTP has been sent.",
+      });
   } catch (error) {
     next(error);
   }
@@ -121,10 +130,10 @@ export const verifyResetOTP = async (req, res, next) => {
 
     if (!otpRecord) {
       res.status(400);
-      return next(new Error('Invalid or expired OTP'));
+      return next(new Error("Invalid or expired OTP"));
     }
 
-    res.status(200).json({ message: 'OTP verified successfully' });
+    res.status(200).json({ message: "OTP verified successfully" });
   } catch (error) {
     next(error);
   }
@@ -141,13 +150,13 @@ export const resetPassword = async (req, res, next) => {
 
     if (!otpRecord) {
       res.status(400);
-      return next(new Error('Invalid or expired OTP'));
+      return next(new Error("Invalid or expired OTP"));
     }
 
     const user = await User.findOne({ email });
     if (!user) {
       res.status(404);
-      return next(new Error('User not found'));
+      return next(new Error("User not found"));
     }
 
     user.password = newPassword;
@@ -156,7 +165,7 @@ export const resetPassword = async (req, res, next) => {
     // Delete OTP record after successful reset
     await OTP.deleteOne({ _id: otpRecord._id });
 
-    res.status(200).json({ message: 'Password reset successfully' });
+    res.status(200).json({ message: "Password reset successfully" });
   } catch (error) {
     next(error);
   }
