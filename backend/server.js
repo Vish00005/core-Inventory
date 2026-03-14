@@ -5,6 +5,15 @@ import helmet from "helmet";
 import morgan from "morgan";
 import rateLimit from "express-rate-limit";
 import connectDB from "./config/db.js";
+import { notFound, errorHandler } from "./middleware/errorMiddleware.js";
+
+// Route imports
+import authRoutes from "./routes/authRoutes.js";
+import productRoutes from "./routes/productRoutes.js";
+import warehouseRoutes from "./routes/warehouseRoutes.js";
+import inventoryRoutes from "./routes/inventoryRoutes.js";
+import dashboardRoutes from "./routes/dashboardRoutes.js";
+import userRoutes from "./routes/userRoutes.js";
 
 // Load environment variables
 dotenv.config();
@@ -66,6 +75,7 @@ app.use("/api/products", productRoutes);
 app.use("/api/warehouses", warehouseRoutes);
 app.use("/api/inventory", inventoryRoutes);
 app.use("/api/dashboard", dashboardRoutes);
+app.use("/api/users", userRoutes);
 
 // Error handling middleware
 app.use(notFound);
