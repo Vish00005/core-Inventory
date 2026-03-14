@@ -53,16 +53,18 @@ cd backend
 
 ```bash
 npm install
-# Wipes database and re-seeds with Gujarat regional data
+
 npm run data:import
-# Start dev server
+
 npm run dev
 ```
 
 ### 3. Frontend Initialization
 
+In New Terminal
+
 ```bash
-cd ../frontend
+cd frontend
 npm install
 npm run dev
 ```
