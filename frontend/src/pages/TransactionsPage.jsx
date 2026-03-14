@@ -175,6 +175,7 @@ const TransactionsPage = () => {
             <thead className="text-xs text-muted-foreground uppercase bg-muted/50 border-b border-border">
               <tr>
                 <th className="px-6 py-3">Date</th>
+                <th className="px-6 py-3">ID</th>
                 <th className="px-6 py-3">Type</th>
                 <th className="px-6 py-3">Product</th>
                 <th className="px-6 py-3">Qty</th>
@@ -188,7 +189,7 @@ const TransactionsPage = () => {
               {loading ? (
                 <tr>
                   <td
-                    colSpan="7"
+                    colSpan="9"
                     className="px-6 py-8 text-center text-muted-foreground"
                   >
                     Loading transactions...
@@ -197,7 +198,7 @@ const TransactionsPage = () => {
               ) : filteredTransactions.length === 0 ? (
                 <tr>
                   <td
-                    colSpan="7"
+                    colSpan="9"
                     className="px-6 py-8 text-center text-muted-foreground"
                   >
                     No transactions found.
@@ -214,6 +215,12 @@ const TransactionsPage = () => {
                     >
                       <td className="px-6 py-4 text-muted-foreground">
                         {new Date(tx.createdAt).toLocaleString()}
+                      </td>
+                      <td className="px-6 py-4">
+                        <span className="font-mono text-xs font-bold text-primary bg-primary/5 px-2 py-1 rounded">
+                          {tx.formattedId ||
+                            tx._id.toString().substring(0, 8).toUpperCase()}
+                        </span>
                       </td>
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-2">
@@ -288,7 +295,7 @@ const TransactionsPage = () => {
                     {expandedId === tx._id && (
                       <tr className="bg-muted/20 animate-in slide-in-from-top-1 duration-200">
                         <td
-                          colSpan="8"
+                          colSpan="9"
                           className="px-6 py-6 border-b border-border"
                         >
                           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -298,7 +305,9 @@ const TransactionsPage = () => {
                                 <p className="text-[10px] uppercase font-bold text-muted-foreground mb-1">
                                   Transaction ID
                                 </p>
-                                <p className="font-mono text-xs">{tx._id}</p>
+                                <p className="font-mono text-xs font-bold text-primary">
+                                  {tx.formattedId || tx._id}
+                                </p>
                               </div>
                               <div>
                                 <p className="text-[10px] uppercase font-bold text-muted-foreground mb-1">

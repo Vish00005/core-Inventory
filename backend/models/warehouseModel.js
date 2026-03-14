@@ -1,4 +1,4 @@
-import mongoose from 'mongoose';
+import mongoose from "mongoose";
 
 const warehouseSchema = new mongoose.Schema(
   {
@@ -8,6 +8,15 @@ const warehouseSchema = new mongoose.Schema(
       unique: true,
       trim: true,
     },
+    code: {
+      type: String,
+      required: true,
+      unique: true,
+      uppercase: true,
+      trim: true,
+      minlength: 2,
+      maxlength: 2,
+    },
     location: {
       type: String,
       required: true,
@@ -15,11 +24,15 @@ const warehouseSchema = new mongoose.Schema(
     description: {
       type: String,
     },
+    rooms: {
+      type: [String],
+      default: ["Main Area"],
+    },
   },
   {
     timestamps: true,
-  }
+  },
 );
 
-const Warehouse = mongoose.model('Warehouse', warehouseSchema);
+const Warehouse = mongoose.model("Warehouse", warehouseSchema);
 export default Warehouse;

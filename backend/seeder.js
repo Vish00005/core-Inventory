@@ -6,6 +6,8 @@ import Warehouse from "./models/warehouseModel.js";
 import Inventory from "./models/inventoryModel.js";
 import Transaction from "./models/transactionModel.js";
 import Supplier from "./models/supplierModel.js";
+import OTP from "./models/otpModel.js";
+import Counter from "./models/counterModel.js";
 import connectDB from "./config/db.js";
 import bcrypt from "bcryptjs";
 
@@ -15,19 +17,26 @@ connectDB();
 
 const importData = async () => {
   try {
+    console.log("--- Database Reset Initiated ---");
+
+    // Clear all existing data
+    console.log("Clearing existing collections...");
     await User.deleteMany();
     await Product.deleteMany();
     await Warehouse.deleteMany();
     await Inventory.deleteMany();
     await Transaction.deleteMany();
     await Supplier.deleteMany();
+    await OTP.deleteMany();
+    await Counter.deleteMany();
+    console.log("✅ Database cleared.");
 
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash("Password@123", salt);
 
+    console.log("Seeding Users...");
     const createdUsers = await User.insertMany([
       {
-        loginId: "admin123",
         name: "Admin User",
         email: "admin@example.com",
         password: hashedPassword,
@@ -35,7 +44,6 @@ const importData = async () => {
         isVerified: true,
       },
       {
-        loginId: "manager123",
         name: "Manager User",
         email: "manager@example.com",
         password: hashedPassword,
@@ -43,7 +51,6 @@ const importData = async () => {
         isVerified: true,
       },
       {
-        loginId: "staff123",
         name: "Staff User",
         email: "staff@example.com",
         password: hashedPassword,
@@ -54,19 +61,25 @@ const importData = async () => {
 
     const adminUser = createdUsers[0]._id;
 
+    console.log("Seeding Warehouses...");
     const createdWarehouses = await Warehouse.insertMany([
       {
         name: "Central Warehouse NYC",
+        code: "WH",
         location: "New York, NY",
         description: "Main distribution center",
+        rooms: ["Main Area", "Floor 1", "Floor 2"],
       },
       {
         name: "West Coast Hub LA",
+        code: "LA",
         location: "Los Angeles, CA",
         description: "West coast fulfillment",
+        rooms: ["Main Area", "Dock A", "Dock B"],
       },
     ]);
 
+    console.log("Seeding Products...");
     const createdProducts = await Product.insertMany([
       {
         name: "Laptop Pro 15",
@@ -100,49 +113,64 @@ const importData = async () => {
         description: "Braided USB-C to USB-C cable",
         reorderLevel: 200,
       },
+      {
+        name: 'Monitor 4K 27"',
+        sku: "MON-27-4K",
+        category: "Electronics",
+        unit: "pcs",
+        description: "UHD Color accurate monitor",
+        reorderLevel: 15,
+      },
     ]);
 
+    console.log("Initializing Inventory levels...");
     const inventoryItems = [];
 
     // Distribute products in warehouses
     for (const product of createdProducts) {
-      // Put some in Warehouse 1
+      // Put some in Warehouse 1, Main Area
       inventoryItems.push({
         product: product._id,
         warehouse: createdWarehouses[0]._id,
-        quantity: Math.floor(Math.random() * 100) + product.reorderLevel,
+        room: "Main Area",
+        quantity: Math.floor(Math.random() * 50) + product.reorderLevel,
       });
-      // Put some in Warehouse 2
+      // Put some in Warehouse 2, Main Area
       inventoryItems.push({
         product: product._id,
         warehouse: createdWarehouses[1]._id,
-        quantity: Math.floor(Math.random() * 100) + 10,
+        room: "Main Area",
+        quantity: Math.floor(Math.random() * 30) + 10,
       });
     }
 
     await Inventory.insertMany(inventoryItems);
 
-    console.log("Data Imported!");
+    console.log("✅ Data seeded successfully!");
+    console.log("--- Database Reset Complete ---");
     process.exit();
   } catch (error) {
-    console.error(`Error with data import: ${error}`);
+    console.error(`❌ Error with data import: ${error}`);
     process.exit(1);
   }
 };
 
 const destroyData = async () => {
   try {
+    console.log("⚠️ Destroying all data...");
     await User.deleteMany();
     await Product.deleteMany();
     await Warehouse.deleteMany();
     await Inventory.deleteMany();
     await Transaction.deleteMany();
     await Supplier.deleteMany();
+    await OTP.deleteMany();
+    await Counter.deleteMany();
 
-    console.log("Data Destroyed!");
+    console.log("🔥 Data Destroyed!");
     process.exit();
   } catch (error) {
-    console.error(`Error with data destroy: ${error}`);
+    console.error(`❌ Error with data destroy: ${error}`);
     process.exit(1);
   }
 };

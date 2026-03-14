@@ -1,6 +1,8 @@
 import Inventory from "../models/inventoryModel.js";
 import Transaction from "../models/transactionModel.js";
 import Product from "../models/productModel.js";
+import Warehouse from "../models/warehouseModel.js";
+import Counter from "../models/counterModel.js";
 import mongoose from "mongoose";
 
 // Helper to update inventory balance
@@ -38,6 +40,33 @@ const updateInventoryBlock = async (
 
   await inventory.save({ session });
   return inventory;
+};
+
+// Helper to generate custom transaction ID
+const generateFormattedId = async (warehouseId, type, session) => {
+  const warehouse = await Warehouse.findById(warehouseId).session(session);
+  if (!warehouse || !warehouse.code) {
+    throw new Error(`Warehouse ${warehouseId} not found or missing code`);
+  }
+
+  const typeMap = {
+    RECEIPT: "IN",
+    DELIVERY: "OUT",
+    TRANSFER: "TR",
+    ADJUSTMENT: "AD",
+  };
+
+  const opCode = typeMap[type];
+
+  // Atomic increment for the counter
+  const counter = await Counter.findOneAndUpdate(
+    { warehouseId, type },
+    { $inc: { seq: 1 } },
+    { new: true, upsert: true, session },
+  );
+
+  const sequence = counter.seq.toString().padStart(3, "0");
+  return `${warehouse.code}/${opCode}/${sequence}`;
 };
 
 // @desc    Get all inventory with filtering
@@ -102,6 +131,12 @@ export const processReceipt = async (req, res, next) => {
         await updateInventoryBlock(product, warehouse, room, quantity, session);
       }
 
+      const formattedId = await generateFormattedId(
+        warehouse,
+        "RECEIPT",
+        session,
+      );
+
       transactions.push({
         product,
         type: "RECEIPT",
@@ -111,6 +146,7 @@ export const processReceipt = async (req, res, next) => {
         status: finalStatus,
         createdBy: req.user._id,
         notes,
+        formattedId,
       });
     }
 
@@ -119,12 +155,10 @@ export const processReceipt = async (req, res, next) => {
     });
 
     await session.commitTransaction();
-    res
-      .status(201)
-      .json({
-        message: "Receipt processed successfully",
-        transactions: createdTransactions,
-      });
+    res.status(201).json({
+      message: "Receipt processed successfully",
+      transactions: createdTransactions,
+    });
   } catch (error) {
     await session.abortTransaction();
     res.status(400);
@@ -167,6 +201,12 @@ export const processDelivery = async (req, res, next) => {
         );
       }
 
+      const formattedId = await generateFormattedId(
+        warehouse,
+        "DELIVERY",
+        session,
+      );
+
       transactions.push({
         product,
         type: "DELIVERY",
@@ -176,6 +216,7 @@ export const processDelivery = async (req, res, next) => {
         status: finalStatus,
         createdBy: req.user._id,
         notes,
+        formattedId,
       });
     }
 
@@ -184,12 +225,10 @@ export const processDelivery = async (req, res, next) => {
     });
 
     await session.commitTransaction();
-    res
-      .status(201)
-      .json({
-        message: "Delivery processed successfully",
-        transactions: createdTransactions,
-      });
+    res.status(201).json({
+      message: "Delivery processed successfully",
+      transactions: createdTransactions,
+    });
   } catch (error) {
     await session.abortTransaction();
     res.status(400);
@@ -257,6 +296,12 @@ export const processTransfer = async (req, res, next) => {
         session,
       );
 
+      const formattedId = await generateFormattedId(
+        sourceWarehouse,
+        "TRANSFER",
+        session,
+      );
+
       transactions.push({
         product,
         type: "TRANSFER",
@@ -267,6 +312,7 @@ export const processTransfer = async (req, res, next) => {
         destinationRoom,
         createdBy: req.user._id,
         notes,
+        formattedId,
       });
     }
 
@@ -275,12 +321,10 @@ export const processTransfer = async (req, res, next) => {
     });
 
     await session.commitTransaction();
-    res
-      .status(201)
-      .json({
-        message: "Transfer processed successfully",
-        transactions: createdTransactions,
-      });
+    res.status(201).json({
+      message: "Transfer processed successfully",
+      transactions: createdTransactions,
+    });
   } catch (error) {
     await session.abortTransaction();
     res.status(400);
@@ -329,6 +373,12 @@ export const processAdjustment = async (req, res, next) => {
       inventory.quantity = newQuantity;
       await inventory.save({ session });
 
+      const formattedId = await generateFormattedId(
+        warehouse,
+        "ADJUSTMENT",
+        session,
+      );
+
       transactions.push({
         product,
         type: "ADJUSTMENT",
@@ -339,6 +389,7 @@ export const processAdjustment = async (req, res, next) => {
         destinationRoom: diff > 0 ? room : undefined,
         createdBy: req.user._id,
         notes: notes || `Adjusted from ${currentQuantity} to ${newQuantity}`,
+        formattedId,
       });
     }
 
@@ -350,12 +401,10 @@ export const processAdjustment = async (req, res, next) => {
     }
 
     await session.commitTransaction();
-    res
-      .status(201)
-      .json({
-        message: "Adjustment processed successfully",
-        transactions: createdTransactions,
-      });
+    res.status(201).json({
+      message: "Adjustment processed successfully",
+      transactions: createdTransactions,
+    });
   } catch (error) {
     await session.abortTransaction();
     res.status(400);
@@ -370,10 +419,11 @@ export const processAdjustment = async (req, res, next) => {
 // @access  Private
 export const getTransactions = async (req, res, next) => {
   try {
-    const { type, warehouse } = req.query;
+    const { type, warehouse, status } = req.query;
 
     let filter = {};
     if (type) filter.type = type;
+    if (status) filter.status = status;
     if (warehouse) {
       filter.$or = [
         { sourceWarehouse: warehouse },
@@ -443,6 +493,79 @@ export const completeTransaction = async (req, res, next) => {
 
     await session.commitTransaction();
     res.json({ message: "Transaction marked as completed", transaction });
+  } catch (error) {
+    await session.abortTransaction();
+    next(error);
+  } finally {
+    session.endSession();
+  }
+};
+
+// @desc    Update transaction status (Pending <-> Completed)
+// @route   PATCH /api/inventory/transactions/:id/status
+// @access  Private (Manager/Admin)
+export const updateTransactionStatus = async (req, res, next) => {
+  const session = await mongoose.startSession();
+  session.startTransaction();
+  try {
+    const { status } = req.body;
+    const transaction = await Transaction.findById(req.params.id).session(
+      session,
+    );
+
+    if (!transaction) {
+      res.status(404);
+      throw new Error("Transaction not found");
+    }
+
+    if (transaction.status === status) {
+      return res.json({
+        message: "Status is already set to " + status,
+        transaction,
+      });
+    }
+
+    // Safety Lock: Don't allow COMPLETED transactions to go back to PENDING or CANCELLED
+    if (transaction.status === "COMPLETED") {
+      res.status(400);
+      throw new Error(
+        "Finalized transactions cannot be reverted to Pending or Cancelled.",
+      );
+    }
+
+    // Logic:
+    // 1. PENDING -> COMPLETED: Perform normal increase/decrease
+    // 2. COMPLETED -> PENDING: Reverse the original increase/decrease (REMOVED/DISABLED based on user request)
+    // 3. COMPLETED -> CANCELLED: Reverse the original increase/decrease (REMOVED/DISABLED based on user request)
+
+    const isApplying =
+      transaction.status === "PENDING" && status === "COMPLETED";
+
+    if (isApplying) {
+      if (transaction.type === "RECEIPT") {
+        await updateInventoryBlock(
+          transaction.product,
+          transaction.destinationWarehouse,
+          transaction.destinationRoom,
+          transaction.quantity,
+          session,
+        );
+      } else if (transaction.type === "DELIVERY") {
+        await updateInventoryBlock(
+          transaction.product,
+          transaction.sourceWarehouse,
+          transaction.sourceRoom,
+          -transaction.quantity,
+          session,
+        );
+      }
+    }
+
+    transaction.status = status;
+    await transaction.save({ session });
+
+    await session.commitTransaction();
+    res.json({ message: `Status updated to ${status}`, transaction });
   } catch (error) {
     await session.abortTransaction();
     next(error);
