@@ -37,21 +37,21 @@ const importData = async () => {
     console.log("Seeding Users...");
     const createdUsers = await User.insertMany([
       {
-        name: "Admin User",
+        name: "Vishal Khimsuriya",
         email: "admin@example.com",
         password: hashedPassword,
         role: "admin",
         isVerified: true,
       },
       {
-        name: "Manager User",
+        name: "Amit Patel",
         email: "manager@example.com",
         password: hashedPassword,
         role: "manager",
         isVerified: true,
       },
       {
-        name: "Staff User",
+        name: "Sneha Mehta",
         email: "staff@example.com",
         password: hashedPassword,
         role: "staff",
@@ -64,62 +64,69 @@ const importData = async () => {
     console.log("Seeding Warehouses...");
     const createdWarehouses = await Warehouse.insertMany([
       {
-        name: "Central Warehouse NYC",
-        code: "WH",
-        location: "New York, NY",
-        description: "Main distribution center",
-        rooms: ["Main Area", "Floor 1", "Floor 2"],
+        name: "Ahmedabad Mega Hub",
+        code: "AM",
+        location: "Ahmedabad, Gujarat",
+        description: "Primary distribution center for North Gujarat",
+        rooms: ["Ground Floor", "Mezzanine", "Cold Storage"],
       },
       {
-        name: "West Coast Hub LA",
-        code: "LA",
-        location: "Los Angeles, CA",
-        description: "West coast fulfillment",
-        rooms: ["Main Area", "Dock A", "Dock B"],
+        name: "Surat Textile Center",
+        code: "ST",
+        location: "Surat, Gujarat",
+        description: "Diamond and Textile logistics hub",
+        rooms: ["Main Hall", "High Security Vault", "Export Dock"],
+      },
+      {
+        name: "Rajkot Engineering Zone",
+        code: "RZ",
+        location: "Rajkot, Gujarat",
+        description: "Industrial components and machinery hub",
+        rooms: ["Heavy Machining Area", "Parts Store", "Loading Bay"],
       },
     ]);
 
     console.log("Seeding Products...");
     const createdProducts = await Product.insertMany([
       {
-        name: "Laptop Pro 15",
-        sku: "LP-15-BLA",
-        category: "Electronics",
-        unit: "pcs",
-        description: "15 inch professional laptop",
-        reorderLevel: 50,
-      },
-      {
-        name: "Wireless Mouse",
-        sku: "WM-01-GRY",
-        category: "Accessories",
-        unit: "pcs",
-        description: "Ergonomic wireless mouse",
+        name: "Cotton Yarn - Grade A",
+        sku: "TEX-COT-001",
+        category: "Textiles",
+        unit: "bales",
+        description: "High-quality raw cotton yarn for weaving",
         reorderLevel: 100,
       },
       {
-        name: "Desk Chair Ergonomic",
-        sku: "FUR-CH-ERG",
-        category: "Furniture",
+        name: "Polished Diamond 0.5ct",
+        sku: "JWL-DIA-P5",
+        category: "Jewelry",
         unit: "pcs",
-        description: "Office desk chair",
-        reorderLevel: 20,
+        description: "VVS1 clarity round brilliant cut diamond",
+        reorderLevel: 10,
       },
       {
-        name: "USB-C Cable 2m",
-        sku: "ACC-CBL-2M",
-        category: "Accessories",
-        unit: "pcs",
-        description: "Braided USB-C to USB-C cable",
+        name: "Ceramic Wall Tiles 12x18",
+        sku: "BLD-CER-1218",
+        category: "Building Material",
+        unit: "boxes",
+        description: "Premium vitrified wall tiles from Morbi",
         reorderLevel: 200,
       },
       {
-        name: 'Monitor 4K 27"',
-        sku: "MON-27-4K",
-        category: "Electronics",
+        name: "Groundnut Oil 15L",
+        sku: "FOD-OIL-GN15",
+        category: "Food & Beverage",
+        unit: "tins",
+        description: "Pure filtered groundnut oil",
+        reorderLevel: 150,
+      },
+      {
+        name: "Brass Valve 1/2 inch",
+        sku: "ENG-BRS-V12",
+        category: "Engineering",
         unit: "pcs",
-        description: "UHD Color accurate monitor",
-        reorderLevel: 15,
+        description: "Precision engineered brass valve from Jamnagar",
+        reorderLevel: 500,
       },
     ]);
 
@@ -128,19 +135,19 @@ const importData = async () => {
 
     // Distribute products in warehouses
     for (const product of createdProducts) {
-      // Put some in Warehouse 1, Main Area
+      // Put some in Ahmedabad, Ground Floor
       inventoryItems.push({
         product: product._id,
         warehouse: createdWarehouses[0]._id,
-        room: "Main Area",
+        room: "Ground Floor",
         quantity: Math.floor(Math.random() * 50) + product.reorderLevel,
       });
-      // Put some in Warehouse 2, Main Area
+      // Put some in Surat, Main Hall
       inventoryItems.push({
         product: product._id,
         warehouse: createdWarehouses[1]._id,
-        room: "Main Area",
-        quantity: Math.floor(Math.random() * 30) + 10,
+        room: "Main Hall",
+        quantity: Math.floor(Math.random() * 30) + 20,
       });
     }
 
