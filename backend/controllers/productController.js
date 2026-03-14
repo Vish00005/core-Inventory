@@ -1,4 +1,6 @@
 import Product from "../models/productModel.js";
+import Inventory from "../models/inventoryModel.js";
+import mongoose from "mongoose";
 
 // @desc    Get all products
 // @route   GET /api/products
@@ -107,17 +109,29 @@ export const updateProduct = async (req, res, next) => {
 // @route   DELETE /api/products/:id
 // @access  Private (Manager/Admin)
 export const deleteProduct = async (req, res, next) => {
+  const session = await mongoose.startSession();
+  session.startTransaction();
   try {
-    const product = await Product.findById(req.params.id);
+    const product = await Product.findById(req.params.id).session(session);
 
     if (product) {
-      await Product.deleteOne({ _id: product._id });
-      res.json({ message: "Product removed" });
+      // 1. Delete associated inventory
+      await Inventory.deleteMany({ product: product._id }).session(session);
+
+      // 2. Delete the product itself
+      await Product.deleteOne({ _id: product._id }).session(session);
+
+      await session.commitTransaction();
+      res.json({ message: "Product and associated inventory removed" });
     } else {
       res.status(404);
+      await session.abortTransaction();
       return next(new Error("Product not found"));
     }
   } catch (error) {
+    await session.abortTransaction();
     next(error);
+  } finally {
+    session.endSession();
   }
 };
