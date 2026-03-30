@@ -34,6 +34,7 @@ const corsOptions = {
   origin: [
     "http://localhost:5173",
     "http://localhost:5174",
+    "https://core-inventory-six.vercel.app",
     process.env.CLIENT_URL,
   ].filter(Boolean),
   credentials: true,
