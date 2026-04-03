@@ -1,8 +1,8 @@
-import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
-import axios from 'axios';
+import { create } from "zustand";
+import { persist } from "zustand/middleware";
+import axios from "axios";
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 
 export const useAuthStore = create(
   persist(
@@ -16,9 +16,18 @@ export const useAuthStore = create(
       login: async (email, password) => {
         set({ isLoading: true, error: null });
         try {
-          const res = await axios.post(`${API_URL}/auth/login`, { email, password });
+          const res = await axios.post(`${API_URL}/auth/login`, {
+            email,
+            password,
+          });
           set({
-            user: { _id: res.data._id, name: res.data.name, email: res.data.email, loginId: res.data.loginId, role: res.data.role },
+            user: {
+              _id: res.data._id,
+              name: res.data.name,
+              email: res.data.email,
+              loginId: res.data.loginId,
+              role: res.data.role,
+            },
             token: res.data.token,
             isAuthenticated: true,
             isLoading: false,
@@ -26,7 +35,7 @@ export const useAuthStore = create(
           return true;
         } catch (error) {
           set({
-            error: error.response?.data?.message || 'Login failed',
+            error: error.response?.data?.message || "Login failed",
             isLoading: false,
           });
           return false;
@@ -38,7 +47,13 @@ export const useAuthStore = create(
         try {
           const res = await axios.post(`${API_URL}/auth/register`, userData);
           set({
-            user: { _id: res.data._id, name: res.data.name, email: res.data.email, loginId: res.data.loginId, role: res.data.role },
+            user: {
+              _id: res.data._id,
+              name: res.data.name,
+              email: res.data.email,
+              loginId: res.data.loginId,
+              role: res.data.role,
+            },
             token: res.data.token,
             isAuthenticated: true,
             isLoading: false,
@@ -46,7 +61,7 @@ export const useAuthStore = create(
           return true;
         } catch (error) {
           set({
-            error: error.response?.data?.message || 'Registration failed',
+            error: error.response?.data?.message || "Registration failed",
             isLoading: false,
           });
           return false;
@@ -60,7 +75,12 @@ export const useAuthStore = create(
       clearError: () => set({ error: null }),
     }),
     {
-      name: 'auth-storage',
-    }
-  )
+      name: "auth-storage",
+      onRehydrateStorage: () => (state) => {
+        if (state) {
+          state.isLoading = false; // ✅ reset loading on app start
+        }
+      },
+    },
+  ),
 );
